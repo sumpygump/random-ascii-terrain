@@ -11,7 +11,7 @@ class Rmap(object):
     """Random ascii terrain map generator"""
 
     border_chars = ["▄", "▀", "█"]
-    chars = ["▄", "▀", "█", ".", "#", "*", "░"]
+    chars = ["▄", "▀", "█", ".", "#", "*", "░", "▒", "▓"]
     rows = 16
     columns = 16
 
@@ -23,7 +23,6 @@ class Rmap(object):
     def __init__(self, **kwargs):
         """Constructor"""
 
-        print(kwargs)
         if "chars" in kwargs and kwargs["chars"] != None:
             chars = kwargs.get("chars")
             if isinstance(chars, str):
@@ -31,9 +30,8 @@ class Rmap(object):
             else:
                 self.chars = chars
 
-        if "charset" in kwargs:
-            self.chars = [chr(i) for i in range(33, 127)]
-            #self.chars = list(string.hexdigits)
+        if "extend" in kwargs and kwargs["extend"]:
+            self.chars.extend(list("▌▍▎▏▐▕▖▗▘▙▚▛▜▝▞▟■"))
 
         # Shuffle the chars and then knock off a random number, so we have less
         # chance of getting certain chars
@@ -44,8 +42,6 @@ class Rmap(object):
 
         # Density adjusted by injecting into the set of chars some spaces
         self.chars.extend([" "] * random.randrange(0, 20))
-
-        print(self.chars)
 
     def set_size_from_terminal(self):
         """Set the size of the map by finding the dimensions of the terminal window"""
@@ -113,6 +109,7 @@ if __name__ == "__main__":
     parser.add_argument("-s", "--seed", action="store", help="Set random seed")
     parser.add_argument("-w", "--width", action="store", help="Set width of map")
     parser.add_argument("--chars", action="store", help="Set chars to be used in terrain")
+    parser.add_argument("--extend", action="store_true", help="Extend set of chars")
     parser.add_argument("size", type=int, nargs="?", help="Set size of map (will be square)")
 
     # Parse arguments from argv
@@ -124,13 +121,14 @@ if __name__ == "__main__":
         random.seed(args.seed)
 
     # The rmap object
-    rmap = Rmap(chars=args.chars)
+    rmap = Rmap(chars=args.chars, extend=args.extend)
 
     # Set the size (tries to make it a square)
     if args.size:
         rmap.set_size(args.size)
     else:
-        rmap.set_size_from_terminal()
+        if sys.stdin.isatty():
+            rmap.set_size_from_terminal()
 
     # Override the width after setting the size (if provided)
     if args.width:
