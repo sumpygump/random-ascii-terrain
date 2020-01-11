@@ -1,0 +1,144 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+
+import argparse
+import random
+import string
+import sys
+import os
+
+class Rmap(object):
+    """Random ascii terrain map generator"""
+
+    border_chars = ["▄", "▀", "█"]
+    chars = ["▄", "▀", "█", ".", "#", "*", "░"]
+    rows = 16
+    columns = 16
+
+    width = 32
+    height = 16
+
+    add_border = False
+
+    def __init__(self, **kwargs):
+        """Constructor"""
+
+        print(kwargs)
+        if "chars" in kwargs and kwargs["chars"] != None:
+            chars = kwargs.get("chars")
+            if isinstance(chars, str):
+                self.chars = list(chars)
+            else:
+                self.chars = chars
+
+        if "charset" in kwargs:
+            self.chars = [chr(i) for i in range(33, 127)]
+            #self.chars = list(string.hexdigits)
+
+        # Shuffle the chars and then knock off a random number, so we have less
+        # chance of getting certain chars
+        random.shuffle(self.chars)
+        if len(self.chars) > 1:
+            knock_off = random.randrange(1, len(self.chars) + 1)
+            self.chars = self.chars[0:knock_off]
+
+        # Density adjusted by injecting into the set of chars some spaces
+        self.chars.extend([" "] * random.randrange(0, 20))
+
+        print(self.chars)
+
+    def set_size_from_terminal(self):
+        """Set the size of the map by finding the dimensions of the terminal window"""
+        self.rows, self.columns = os.popen('stty size', 'r').read().split()
+        self.width = int(self.columns)
+        self.height = int(self.rows) - 2
+
+    def set_size(self, size):
+        """Set the size manually ; attempts to make the map a square"""
+        self.height = int(size)
+        self.width = int(size) * 2
+
+    def set_width(self, width):
+        """Set the width only (to override)"""
+        self.width = int(width)
+
+    def render(self, printed = False):
+        """Generate and render the ascii terrain map"""
+        lines = []
+
+        max_h = 60 if self.height <= 60 else self.height
+        max_w = 250 if self.width <= 250 else self.width
+
+        height = self.height
+        width = self.width
+        if self.add_border:
+            height = self.height - 2
+            width = self.width - 2
+
+        # Generate the random terrain
+        # The arena is always bigger than the required size so that maps of
+        # varying sizes will end up with the same configurations
+        # (because of the random seed can have consistent results)
+        for row in range(0, max_h):
+            line = ""
+            for col in range(0, max_w):
+                line = line + random.choice(self.chars)
+
+            # Add border and trim to size
+            if self.add_border:
+                line = self.border_chars[2] + line[0:width] + self.border_chars[2]
+            else:
+                line = line[0:width]
+
+            lines.append(line)
+
+        # Trim to size
+        lines = lines[0:height]
+
+        # Add the top & bottom border
+        if self.add_border:
+            lines.insert(0, self.border_chars[0] * (width + 2))
+            lines.append(self.border_chars[1] * (width + 2))
+
+        if printed:
+            try:
+                for line in lines:
+                    print(line)
+            except KeyboardInterrupt as error:
+                print()
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-b", "--border", action="store_true", help="Add a border to the map")
+    parser.add_argument("-s", "--seed", action="store", help="Set random seed")
+    parser.add_argument("-w", "--width", action="store", help="Set width of map")
+    parser.add_argument("--chars", action="store", help="Set chars to be used in terrain")
+    parser.add_argument("size", type=int, nargs="?", help="Set size of map (will be square)")
+
+    # Parse arguments from argv
+    args = parser.parse_args(sys.argv[1:])
+
+    # Set the seed before we initialize the rmap object
+    # So the randomization in constructor is consistent with seed
+    if args.seed:
+        random.seed(args.seed)
+
+    # The rmap object
+    rmap = Rmap(chars=args.chars)
+
+    # Set the size (tries to make it a square)
+    if args.size:
+        rmap.set_size(args.size)
+    else:
+        rmap.set_size_from_terminal()
+
+    # Override the width after setting the size (if provided)
+    if args.width:
+        rmap.set_width(args.width)
+
+    # Set whether border should be added
+    if args.border:
+        rmap.add_border = args.border
+
+    # Render the map!
+    rmap.render(True)
