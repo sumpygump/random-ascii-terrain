@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
+"""Random ascii terrain map generator module"""
 
 import argparse
 import random
-import string
 import sys
 import os
 
-class Rmap(object):
+
+class Rmap:
     """Random ascii terrain map generator"""
 
     border_chars = ["▄", "▀", "█"]
@@ -23,7 +23,7 @@ class Rmap(object):
     def __init__(self, **kwargs):
         """Constructor"""
 
-        if "chars" in kwargs and kwargs["chars"] != None:
+        if "chars" in kwargs and kwargs["chars"] is not None:
             chars = kwargs.get("chars")
             if isinstance(chars, str):
                 self.chars = list(chars)
@@ -45,7 +45,7 @@ class Rmap(object):
 
     def set_size_from_terminal(self):
         """Set the size of the map by finding the dimensions of the terminal window"""
-        self.rows, self.columns = os.popen('stty size', 'r').read().split()
+        self.rows, self.columns = os.popen("stty size", "r").read().split()
         self.width = int(self.columns)
         self.height = int(self.rows) - 2
 
@@ -58,7 +58,7 @@ class Rmap(object):
         """Set the width only (to override)"""
         self.width = int(width)
 
-    def render(self, printed = False):
+    def render(self, printed=False):
         """Generate and render the ascii terrain map"""
         lines = []
 
@@ -75,9 +75,9 @@ class Rmap(object):
         # The arena is always bigger than the required size so that maps of
         # varying sizes will end up with the same configurations
         # (because of the random seed can have consistent results)
-        for row in range(0, max_h):
+        for _ in range(0, max_h):  # row
             line = ""
-            for col in range(0, max_w):
+            for _ in range(0, max_w):  # col
                 line = line + random.choice(self.chars)
 
             # Add border and trim to size
@@ -100,17 +100,24 @@ class Rmap(object):
             try:
                 for line in lines:
                     print(line)
-            except KeyboardInterrupt as error:
+            except KeyboardInterrupt:
                 print()
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("-b", "--border", action="store_true", help="Add a border to the map")
+    parser.add_argument(
+        "-b", "--border", action="store_true", help="Add a border to the map"
+    )
     parser.add_argument("-s", "--seed", action="store", help="Set random seed")
     parser.add_argument("-w", "--width", action="store", help="Set width of map")
-    parser.add_argument("--chars", action="store", help="Set chars to be used in terrain")
+    parser.add_argument(
+        "--chars", action="store", help="Set chars to be used in terrain"
+    )
     parser.add_argument("--extend", action="store_true", help="Extend set of chars")
-    parser.add_argument("size", type=int, nargs="?", help="Set size of map (will be square)")
+    parser.add_argument(
+        "size", type=int, nargs="?", help="Set size of map (will be square)"
+    )
 
     # Parse arguments from argv
     args = parser.parse_args(sys.argv[1:])
